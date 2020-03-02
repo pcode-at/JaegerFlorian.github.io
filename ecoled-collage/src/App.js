@@ -124,6 +124,7 @@ const PictureCollage = () => {
 
   return (
     <div>
+      <h1>WOOOOOOOOW</h1>
       <Stage
         ref={canvasStage}
         width={window.innerWidth}
