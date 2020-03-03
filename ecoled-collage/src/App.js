@@ -1,18 +1,41 @@
 import React from 'react';
 import useImage from 'use-image';
 import { Stage, Layer, Transformer, Image as KonvaImage } from 'react-konva';
-import lamp from './lamp.png';
+// import lamp from './lamp.png';
+import { useQuery } from '@apollo/react-hooks';
+import gql from 'graphql-tag';
 
-const Lamp = ({ shapeProps, isSelected, onSelect, onChange }) => {
-  const [image] = useImage(lamp);
-  if (image) {
-    image.crossOrigin = 'Anonymous';
+const query = gql`
+  query query {
+    products(first: 1, query: "title:'Ecoled Blade One'") {
+      edges {
+        node {
+          id
+          title
+          images(first: 1) {
+            edges {
+              node {
+                originalSrc
+              }
+            }
+          }
+        }
+      }
+    }
   }
+`;
+
+const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
+  let lampUrl;
+  if (data) {
+    lampUrl = data.products.edges[0].node.images.edges[0].node.originalSrc;
+    console.log(lampUrl);
+  }
+  const [image] = useImage(lampUrl, 'Anonymous');
   const shapeRef = React.useRef();
   const trRef = React.useRef();
   React.useEffect(() => {
     if (isSelected) {
-      // we need to attach transformer manually
       trRef.current.setNode(shapeRef.current);
       trRef.current.getLayer().batchDraw();
     }
@@ -21,7 +44,7 @@ const Lamp = ({ shapeProps, isSelected, onSelect, onChange }) => {
   return (
     <React.Fragment>
       <KonvaImage
-        crossOrigin
+        crossOrigin="anonymus"
         fill=""
         image={image}
         onTap={onSelect}
@@ -68,6 +91,7 @@ const Lamp = ({ shapeProps, isSelected, onSelect, onChange }) => {
 };
 
 const PictureCollage = () => {
+  const { data } = useQuery(query);
   const imageUploader = React.useRef(null);
   const canvasStage = React.createRef();
   const lampCanvas = React.useRef();
@@ -121,10 +145,10 @@ const PictureCollage = () => {
     });
     downloadURI(canvasStageData, 'stage.png');
   };
+  console.log(data);
 
   return (
     <div>
-      <h1>WOOOOOOOOW</h1>
       <Stage
         ref={canvasStage}
         width={window.innerWidth}
@@ -143,6 +167,7 @@ const PictureCollage = () => {
         </Layer>
         <Layer ref={lampCanvas}>
           <Lamp
+            data={data}
             shapeProps={shape}
             isSelected={selected}
             onSelect={() => {
@@ -153,8 +178,8 @@ const PictureCollage = () => {
         </Layer>
       </Stage>
       <label
-        for="files"
-        class="btn"
+        htmlFor="files"
+        className="btn"
         style={{
           border: '1px solid',
           display: 'inline block',
