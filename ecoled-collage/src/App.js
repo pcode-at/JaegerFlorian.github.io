@@ -1,9 +1,12 @@
 import React from 'react';
 import useImage from 'use-image';
 import { Stage, Layer, Transformer, Image as KonvaImage } from 'react-konva';
-// import lamp from './lamp.png';
 import { useQuery } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
+import * as loadImage from 'blueimp-load-image';
+import { makeStyles } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
+import DeviceOrientation, { Orientation } from 'react-screen-orientation';
 
 const query = gql`
   query query {
@@ -25,11 +28,79 @@ const query = gql`
   }
 `;
 
+const useStyles = makeStyles({
+  outerContainer: {
+    height: '100vh',
+    display: 'flex',
+  },
+  stageContainerBeforeUpload: {},
+  stageContainerAfterUpload: {
+    width: '100%',
+    alignContent: 'center',
+    alignItems: 'center',
+  },
+  buttonContainerAfterUpload: {
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'space-evenly',
+  },
+  buttonContainerBeforeUpload: {
+    width: '100%',
+  },
+  singleButtonContainerBeforeUpload: {
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  singleButtonContainerAfterUpload: {
+    width: '48%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    background: '#252a2b',
+    fontFamily: 'Work Sans',
+    fontStyle: 'normal',
+    color: 'white',
+    border: '2px solid transparent',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+    borderRadius: 0,
+    padding: '15px 30px',
+    textAlign: 'center',
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  buttonLabel: {
+    width: '100%',
+  },
+  buttonBeforeUpload: {
+    background: '#252a2b',
+    fontFamily: 'Work Sans',
+    fontStyle: 'normal',
+    color: 'white',
+    border: '2px solid transparent',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    cursor: 'pointer',
+    borderRadius: 0,
+    padding: '15px 30px',
+    width: '50%',
+    display: 'flex',
+    alignSelf: 'center',
+    justifyContent: 'center',
+  },
+});
+
 const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
   let lampUrl;
   if (data) {
     lampUrl = data.products.edges[0].node.images.edges[0].node.originalSrc;
-    console.log(lampUrl);
   }
   const [image] = useImage(lampUrl, 'Anonymous');
   const shapeRef = React.useRef();
@@ -40,7 +111,6 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
       trRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
-
   return (
     <React.Fragment>
       <KonvaImage
@@ -91,41 +161,58 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
 };
 
 const PictureCollage = () => {
+  const classes = useStyles();
   const { data } = useQuery(query);
-  const imageUploader = React.useRef(null);
   const canvasStage = React.createRef();
-  const lampCanvas = React.useRef();
-  const backgroundCanvas = React.useRef();
 
   let newImage = new Image();
 
+  const [backgroundImage, setBackgroundImage] = React.useState(null);
   const [image, setImage] = React.useState(null);
   const [selected, setSelected] = React.useState(false);
-  const [shape, setShape] = React.useState({
-    x: 10,
-    y: 10,
-    width: 200,
-    height: 320,
-  });
+  const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
+  const [innerWidth, setInnerWidth] = React.useState(window.innerWidth);
+  const [shape, setShape] = React.useState(null);
+
+  React.useEffect(() => {
+    window.onorientationchange = function() {
+      if (backgroundImage) {
+        const scaledImage = loadImage.scale(backgroundImage, {
+          maxWidth: window.innerHeight,
+          maxHeight: window.innerWidth,
+        });
+        setImage(scaledImage);
+        let offsetX = window.innerHeight - scaledImage.width;
+        let x = offsetX / 2;
+        let offsetY = window.innerWidth - scaledImage.height;
+        let y = offsetY / 2;
+        setShape({ x: x, y: y, width: 150, height: 240 });
+        setInnerHeight(window.innerWidth);
+        setInnerWidth(window.innerHeight);
+      }
+    };
+  }, [backgroundImage, newImage]);
+
+  let backgroundImageUpload = false;
+  if (backgroundImage !== null) {
+    backgroundImageUpload = true;
+  }
 
   const handleImageUpload = e => {
-    setSelected(false);
-    let canvas = backgroundCanvas.current;
-    let ctx = canvas.getContext('2d');
-    newImage.onload = function() {
-      newImage.crossOrigin = 'Anonymus';
-      setImage(newImage);
-      ctx.drawImage(newImage, 0, 0);
-    };
-
     const [file] = e.target.files;
     if (file) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = e => {
-        ctx.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
-        newImage.src = e.target.result;
-      };
+      loadImage(
+        file,
+        img => {
+          const scaledImage = loadImage.scale(img, {
+            maxWidth: window.innerWidth,
+            maxHeight: window.innerHeight,
+          });
+          setImage(scaledImage);
+          setBackgroundImage(img);
+        },
+        { orientation: true }
+      );
     }
   };
 
@@ -143,73 +230,109 @@ const PictureCollage = () => {
     const canvasStageData = canvasStageSave.toDataURL({
       mimeType: 'image/png',
     });
-    downloadURI(canvasStageData, 'stage.png');
+    downloadURI(canvasStageData, 'collage.png');
   };
-  console.log(data);
+
+  let x;
+  let y;
+  if (image) {
+    if (image.width < innerWidth) {
+      let offsetX = innerWidth - image.width;
+      x = offsetX / 2;
+    }
+    if (image.height < innerHeight) {
+      let offsetY = innerHeight - image.height;
+      y = offsetY / 2;
+    }
+    if (shape === null) {
+      setShape({ x: x, y: y, width: 150, height: 240 });
+    }
+  }
 
   return (
-    <div>
-      <Stage
-        ref={canvasStage}
-        width={window.innerWidth}
-        height={window.innerHeight}
+    <div className={classes.outerContainer}>
+      <div
+        className={
+          backgroundImageUpload
+            ? classes.stageContainerAfterUpload
+            : classes.stageContainerBeforeUpload
+        }
       >
-        <Layer
-          ref={backgroundCanvas}
-          onClick={() => {
-            setSelected(false);
-          }}
-          onTap={() => {
-            setSelected(false);
-          }}
+        <Stage
+          visible={backgroundImageUpload}
+          ref={canvasStage}
+          width={innerWidth}
+          height={innerHeight}
         >
-          <KonvaImage image={image} />
-        </Layer>
-        <Layer ref={lampCanvas}>
-          <Lamp
-            data={data}
-            shapeProps={shape}
-            isSelected={selected}
-            onSelect={() => {
-              setSelected(true);
+          <Layer
+            onClick={() => {
+              setSelected(false);
             }}
-            onChange={setShape}
-          />
-        </Layer>
-      </Stage>
-      <label
-        htmlFor="files"
-        className="btn"
-        style={{
-          border: '1px solid',
-          display: 'inline block',
-          padding: '6px 12px',
-          cursor: 'pointer',
-        }}
+            onTap={() => {
+              setSelected(false);
+            }}
+          >
+            <KonvaImage x={x} y={y} image={image} />
+          </Layer>
+          <Layer visible={backgroundImageUpload}>
+            <Lamp
+              data={data}
+              shapeProps={shape}
+              isSelected={selected}
+              onSelect={() => {
+                setSelected(true);
+              }}
+              onChange={setShape}
+            />
+          </Layer>
+        </Stage>
+      </div>
+      <div
+        className={
+          backgroundImageUpload
+            ? classes.buttonContainerAfterUpload
+            : classes.buttonContainerBeforeUpload
+        }
       >
-        Bild hochladen
-        <input
-          id="files"
-          visibility="hidden"
-          type="file"
-          accept="image/*"
-          style={{ display: 'none' }}
-          onChange={handleImageUpload}
-          ref={imageUploader}
-        />
-      </label>
-      <label
-        class="btn"
-        style={{
-          border: '1px solid',
-          display: 'inline block',
-          padding: '6px 12px',
-          cursor: 'pointer',
-        }}
-        onClick={saveImage}
-      >
-        Bild speichern
-      </label>
+        <div
+          className={
+            backgroundImageUpload
+              ? classes.singleButtonContainerAfterUpload
+              : classes.singleButtonContainerBeforeUpload
+          }
+        >
+          <label
+            className={
+              backgroundImageUpload
+                ? classes.button
+                : classes.buttonBeforeUpload
+            }
+            htmlFor="files"
+          >
+            Bild hochladen
+            <input
+              id="files"
+              visibility="hidden"
+              type="file"
+              accept="image/*"
+              style={{ display: 'none' }}
+              onChange={handleImageUpload}
+            />
+          </label>
+        </div>
+        <div
+          style={
+            backgroundImageUpload
+              ? { visibility: 'visible' }
+              : { visibility: 'hidden' }
+          }
+          className={classes.singleButtonContainerAfterUpload}
+        >
+          <label className={classes.button} onClick={saveImage}>
+            Bild Speichern
+          </label>
+        </div>
+      </div>
     </div>
   );
 };
