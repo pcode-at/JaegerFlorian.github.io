@@ -8,6 +8,9 @@ import { makeStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import DeviceOrientation, { Orientation } from 'react-screen-orientation';
 
+const SHAPE_DEFAULT_WIDTH = 150;
+const SHAPE_DEFAULT_HEIGHT = 240;
+
 const query = gql`
   query query {
     products(first: 1, query: "title:'Ecoled Blade One'") {
@@ -176,20 +179,32 @@ const PictureCollage = () => {
 
   React.useEffect(() => {
     window.onorientationchange = function() {
+      const orientationInnerHeight = innerHeight;
+      const orientationInnerWidth = innerWidth;
+      console.log(orientationInnerHeight);
+      console.log(orientationInnerWidth);
+
       if (backgroundImage) {
         const scaledImage = loadImage.scale(backgroundImage, {
-          maxWidth: window.innerHeight,
-          maxHeight: window.innerWidth,
+          maxWidth: orientationInnerHeight,
+          maxHeight: orientationInnerWidth,
         });
+        console.log(scaledImage);
+
         setImage(scaledImage);
-        let offsetX = window.innerHeight - scaledImage.width;
+        let offsetX = orientationInnerHeight - scaledImage.width;
         let x = offsetX / 2;
-        let offsetY = window.innerWidth - scaledImage.height;
+        let offsetY = orientationInnerWidth - scaledImage.height;
         let y = offsetY / 2;
-        setShape({ x: x, y: y, width: 150, height: 240 });
-        setInnerHeight(window.innerWidth);
-        setInnerWidth(window.innerHeight);
+        setShape({
+          x: x,
+          y: y,
+          width: SHAPE_DEFAULT_WIDTH,
+          height: SHAPE_DEFAULT_HEIGHT,
+        });
       }
+      setInnerHeight(orientationInnerWidth);
+      setInnerWidth(orientationInnerHeight);
     };
   }, [backgroundImage, newImage]);
 
@@ -205,9 +220,10 @@ const PictureCollage = () => {
         file,
         img => {
           const scaledImage = loadImage.scale(img, {
-            maxWidth: window.innerWidth,
-            maxHeight: window.innerHeight,
+            maxWidth: innerWidth,
+            maxHeight: innerHeight,
           });
+          console.log(scaledImage);
           setImage(scaledImage);
           setBackgroundImage(img);
         },
@@ -226,6 +242,7 @@ const PictureCollage = () => {
   }
 
   const saveImage = () => {
+    setSelected(false);
     let canvasStageSave = canvasStage.current;
     const canvasStageData = canvasStageSave.toDataURL({
       mimeType: 'image/png',
@@ -245,7 +262,12 @@ const PictureCollage = () => {
       y = offsetY / 2;
     }
     if (shape === null) {
-      setShape({ x: x, y: y, width: 150, height: 240 });
+      setShape({
+        x: x,
+        y: y,
+        width: SHAPE_DEFAULT_WIDTH,
+        height: SHAPE_DEFAULT_HEIGHT,
+      });
     }
   }
 
