@@ -5,8 +5,7 @@ import { useQuery } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 import * as loadImage from 'blueimp-load-image';
 import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import DeviceOrientation, { Orientation } from 'react-screen-orientation';
+import { saveAs } from 'file-saver';
 
 const SHAPE_DEFAULT_WIDTH = 150;
 const SHAPE_DEFAULT_HEIGHT = 240;
@@ -18,10 +17,11 @@ const query = gql`
         node {
           id
           title
-          images(first: 1) {
+          images(first: 10) {
             edges {
               node {
                 originalSrc
+                altText
               }
             }
           }
@@ -66,7 +66,7 @@ const useStyles = makeStyles({
   },
   button: {
     background: '#252a2b',
-    fontFamily: 'Work Sans',
+    fontFamily: 'sans-serif',
     fontStyle: 'normal',
     color: 'white',
     border: '2px solid transparent',
@@ -84,7 +84,7 @@ const useStyles = makeStyles({
   },
   buttonBeforeUpload: {
     background: '#252a2b',
-    fontFamily: 'Work Sans',
+    fontFamily: 'sans-serif',
     fontStyle: 'normal',
     color: 'white',
     border: '2px solid transparent',
@@ -101,9 +101,14 @@ const useStyles = makeStyles({
 });
 
 const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
-  let lampUrl;
-  if (data) {
-    lampUrl = data.products.edges[0].node.images.edges[0].node.originalSrc;
+  const [lampUrl, setLampUrl] = React.useState(null);
+
+  if (data && lampUrl === null) {
+    data.products.edges[0].node.images.edges.forEach(product => {
+      if (product.node.altText === 'collage') {
+        setLampUrl(product.node.originalSrc);
+      }
+    });
   }
   const [image] = useImage(lampUrl, 'Anonymous');
   const shapeRef = React.useRef();
@@ -114,6 +119,7 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
       trRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
+
   return (
     <React.Fragment>
       <KonvaImage
@@ -176,35 +182,51 @@ const PictureCollage = () => {
   const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
   const [innerWidth, setInnerWidth] = React.useState(window.innerWidth);
   const [shape, setShape] = React.useState(null);
+  const [currentOrientation, setCurrentOrientation] = React.useState(null);
+  const [offset, setOffset] = React.useState(null);
+
+  function changeOrientation() {
+    //Gets the current orientation before the phone rotates, so true means that the phone will be in landscape
+    const orientation = window.matchMedia('(orientation: portrait)');
+    if (orientation.matches === true) {
+      setCurrentOrientation('landscape');
+    } else {
+      setCurrentOrientation('portrait');
+    }
+    const orientationInnerHeight = innerHeight;
+    const orientationInnerWidth = innerWidth;
+    if (backgroundImage) {
+      const scaledImage = loadImage.scale(backgroundImage, {
+        maxWidth: orientationInnerHeight,
+        maxHeight: orientationInnerWidth,
+      });
+
+      setImage(scaledImage);
+      let offsetX = orientationInnerHeight - scaledImage.width;
+      let x = offsetX / 2;
+      let offsetY = orientationInnerWidth - scaledImage.height;
+      let y = offsetY / 2;
+      setOffset({ x: x, y: y });
+      setShape({
+        x: x,
+        y: y,
+        width: SHAPE_DEFAULT_WIDTH,
+        height: SHAPE_DEFAULT_HEIGHT,
+      });
+    }
+
+    setInnerHeight(orientationInnerWidth);
+    setInnerWidth(orientationInnerHeight);
+  }
 
   React.useEffect(() => {
     window.onorientationchange = function() {
-      const orientationInnerHeight = innerHeight;
-      const orientationInnerWidth = innerWidth;
-      console.log(orientationInnerHeight);
-      console.log(orientationInnerWidth);
-
-      if (backgroundImage) {
-        const scaledImage = loadImage.scale(backgroundImage, {
-          maxWidth: orientationInnerHeight,
-          maxHeight: orientationInnerWidth,
-        });
-        console.log(scaledImage);
-
-        setImage(scaledImage);
-        let offsetX = orientationInnerHeight - scaledImage.width;
-        let x = offsetX / 2;
-        let offsetY = orientationInnerWidth - scaledImage.height;
-        let y = offsetY / 2;
-        setShape({
-          x: x,
-          y: y,
-          width: SHAPE_DEFAULT_WIDTH,
-          height: SHAPE_DEFAULT_HEIGHT,
-        });
-      }
-      setInnerHeight(orientationInnerWidth);
-      setInnerWidth(orientationInnerHeight);
+      changeOrientation();
+      this.setTimeout(() => {
+        if (this.window.innerHeight !== innerHeight) {
+          changeOrientation();
+        }
+      }, 400);
     };
   }, [backgroundImage, newImage]);
 
@@ -223,23 +245,32 @@ const PictureCollage = () => {
             maxWidth: innerWidth,
             maxHeight: innerHeight,
           });
-          console.log(scaledImage);
           setImage(scaledImage);
           setBackgroundImage(img);
+          let x;
+          let y;
+          if (scaledImage.width < innerWidth) {
+            let offsetX = innerWidth - scaledImage.width;
+            x = offsetX / 2;
+          }
+          if (scaledImage.height < innerHeight) {
+            let offsetY = innerHeight - scaledImage.height;
+            y = offsetY / 2;
+          }
+          setOffset({ x: x, y: y });
+          if (shape === null) {
+            setShape({
+              x: x,
+              y: y,
+              width: SHAPE_DEFAULT_WIDTH,
+              height: SHAPE_DEFAULT_HEIGHT,
+            });
+          }
         },
         { orientation: true }
       );
     }
   };
-
-  function downloadURI(uri, name) {
-    var link = document.createElement('a');
-    link.download = name;
-    link.href = uri;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
 
   const saveImage = () => {
     setSelected(false);
@@ -247,28 +278,14 @@ const PictureCollage = () => {
     const canvasStageData = canvasStageSave.toDataURL({
       mimeType: 'image/png',
     });
-    downloadURI(canvasStageData, 'collage.png');
+    saveAs(canvasStageData, 'collage.png');
   };
 
-  let x;
-  let y;
-  if (image) {
-    if (image.width < innerWidth) {
-      let offsetX = innerWidth - image.width;
-      x = offsetX / 2;
-    }
-    if (image.height < innerHeight) {
-      let offsetY = innerHeight - image.height;
-      y = offsetY / 2;
-    }
-    if (shape === null) {
-      setShape({
-        x: x,
-        y: y,
-        width: SHAPE_DEFAULT_WIDTH,
-        height: SHAPE_DEFAULT_HEIGHT,
-      });
-    }
+  if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
+    changeOrientation();
+  }
+  if (offset !== null) {
+    console.log(offset.x, offset.y);
   }
 
   return (
@@ -294,7 +311,11 @@ const PictureCollage = () => {
               setSelected(false);
             }}
           >
-            <KonvaImage x={x} y={y} image={image} />
+            <KonvaImage
+              x={shape ? offset.x : 0}
+              y={shape ? offset.y : 0}
+              image={image}
+            />
           </Layer>
           <Layer visible={backgroundImageUpload}>
             <Lamp
