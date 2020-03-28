@@ -5,31 +5,7 @@ import { useQuery } from '@apollo/react-hooks';
 import gql from 'graphql-tag';
 import * as loadImage from 'blueimp-load-image';
 import { makeStyles } from '@material-ui/core/styles';
-import Button from '@material-ui/core/Button';
-import DeviceOrientation, { Orientation } from 'react-screen-orientation';
-
-const SHAPE_DEFAULT_WIDTH = 150;
-const SHAPE_DEFAULT_HEIGHT = 240;
-
-const query = gql`
-  query query {
-    products(first: 1, query: "title:'Ecoled Blade One'") {
-      edges {
-        node {
-          id
-          title
-          images(first: 1) {
-            edges {
-              node {
-                originalSrc
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+import { saveAs } from 'file-saver';
 
 const useStyles = makeStyles({
   outerContainer: {
@@ -66,7 +42,7 @@ const useStyles = makeStyles({
   },
   button: {
     background: '#252a2b',
-    fontFamily: 'Work Sans',
+    fontFamily: 'sans-serif',
     fontStyle: 'normal',
     color: 'white',
     border: '2px solid transparent',
@@ -84,7 +60,7 @@ const useStyles = makeStyles({
   },
   buttonBeforeUpload: {
     background: '#252a2b',
-    fontFamily: 'Work Sans',
+    fontFamily: 'sans-serif',
     fontStyle: 'normal',
     color: 'white',
     border: '2px solid transparent',
@@ -101,11 +77,35 @@ const useStyles = makeStyles({
 });
 
 const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
-  let lampUrl;
-  if (data) {
-    lampUrl = data.products.edges[0].node.images.edges[0].node.originalSrc;
+  const [lampUrl, setLampUrl] = React.useState(null);
+  let lampHeight;
+  let lampWidth;
+  if (
+    data &&
+    data.node &&
+    data.node.images &&
+    data.node.images.edges.length !== 0 &&
+    lampUrl === null
+  ) {
+    data.node.images.edges.forEach(product => {
+      if (product.node.altText === 'collage') {
+        setLampUrl(product.node.originalSrc);
+      }
+    });
   }
   const [image] = useImage(lampUrl, 'Anonymous');
+  if (
+    image &&
+    shapeProps &&
+    shapeProps.height === null &&
+    shapeProps.width === null
+  ) {
+    const aspectRatio = image.width / image.height;
+    lampHeight = window.innerHeight / 4;
+    lampWidth = lampHeight * aspectRatio;
+    shapeProps.width = lampWidth;
+    shapeProps.height = lampHeight;
+  }
   const shapeRef = React.useRef();
   const trRef = React.useRef();
   React.useEffect(() => {
@@ -114,6 +114,7 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
       trRef.current.getLayer().batchDraw();
     }
   }, [isSelected]);
+
   return (
     <React.Fragment>
       <KonvaImage
@@ -164,6 +165,37 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
 };
 
 const PictureCollage = () => {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  const productId = urlParams.get('product_id');
+  let query;
+  if (productId) {
+    query = gql`
+      query query {
+        node(id: "${productId}") {
+          ... on Product {
+            images(first: 100) {
+              edges {
+                node {
+                  originalSrc
+                  altText
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+  } else {
+    query = gql`
+      query query {
+        shop {
+          name
+        }
+      }
+    `;
+  }
+
   const classes = useStyles();
   const { data } = useQuery(query);
   const canvasStage = React.createRef();
@@ -176,35 +208,51 @@ const PictureCollage = () => {
   const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
   const [innerWidth, setInnerWidth] = React.useState(window.innerWidth);
   const [shape, setShape] = React.useState(null);
+  const [currentOrientation, setCurrentOrientation] = React.useState(null);
+  const [offset, setOffset] = React.useState(null);
+
+  function changeOrientation() {
+    //Gets the current orientation before the phone rotates, so true means that the phone will be in landscape
+    const orientation = window.matchMedia('(orientation: portrait)');
+    if (orientation.matches === true) {
+      setCurrentOrientation('landscape');
+    } else {
+      setCurrentOrientation('portrait');
+    }
+    const orientationInnerHeight = innerHeight;
+    const orientationInnerWidth = innerWidth;
+    if (backgroundImage) {
+      const scaledImage = loadImage.scale(backgroundImage, {
+        maxWidth: orientationInnerHeight,
+        maxHeight: orientationInnerWidth,
+      });
+
+      setImage(scaledImage);
+      let offsetX = orientationInnerHeight - scaledImage.width;
+      let x = offsetX / 2;
+      let offsetY = orientationInnerWidth - scaledImage.height;
+      let y = offsetY / 2;
+      setOffset({ x: x, y: y });
+      setShape({
+        x: x,
+        y: y,
+        width: null,
+        height: null,
+      });
+    }
+
+    setInnerHeight(orientationInnerWidth);
+    setInnerWidth(orientationInnerHeight);
+  }
 
   React.useEffect(() => {
     window.onorientationchange = function() {
-      const orientationInnerHeight = innerHeight;
-      const orientationInnerWidth = innerWidth;
-      console.log(orientationInnerHeight);
-      console.log(orientationInnerWidth);
-
-      if (backgroundImage) {
-        const scaledImage = loadImage.scale(backgroundImage, {
-          maxWidth: orientationInnerHeight,
-          maxHeight: orientationInnerWidth,
-        });
-        console.log(scaledImage);
-
-        setImage(scaledImage);
-        let offsetX = orientationInnerHeight - scaledImage.width;
-        let x = offsetX / 2;
-        let offsetY = orientationInnerWidth - scaledImage.height;
-        let y = offsetY / 2;
-        setShape({
-          x: x,
-          y: y,
-          width: SHAPE_DEFAULT_WIDTH,
-          height: SHAPE_DEFAULT_HEIGHT,
-        });
-      }
-      setInnerHeight(orientationInnerWidth);
-      setInnerWidth(orientationInnerHeight);
+      changeOrientation();
+      this.setTimeout(() => {
+        if (this.window.innerHeight !== innerHeight) {
+          changeOrientation();
+        }
+      }, 400);
     };
   }, [backgroundImage, newImage]);
 
@@ -226,20 +274,30 @@ const PictureCollage = () => {
           console.log(scaledImage);
           setImage(scaledImage);
           setBackgroundImage(img);
+          let x;
+          let y;
+          if (scaledImage.width < innerWidth) {
+            let offsetX = innerWidth - scaledImage.width;
+            x = offsetX / 2;
+          }
+          if (scaledImage.height < innerHeight) {
+            let offsetY = innerHeight - scaledImage.height;
+            y = offsetY / 2;
+          }
+          setOffset({ x: x, y: y });
+          if (shape === null) {
+            setShape({
+              x: x,
+              y: y,
+              width: null,
+              height: null,
+            });
+          }
         },
         { orientation: true }
       );
     }
   };
-
-  function downloadURI(uri, name) {
-    var link = document.createElement('a');
-    link.download = name;
-    link.href = uri;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
 
   const saveImage = () => {
     setSelected(false);
@@ -247,28 +305,11 @@ const PictureCollage = () => {
     const canvasStageData = canvasStageSave.toDataURL({
       mimeType: 'image/png',
     });
-    downloadURI(canvasStageData, 'collage.png');
+    saveAs(canvasStageData, 'collage.png');
   };
 
-  let x;
-  let y;
-  if (image) {
-    if (image.width < innerWidth) {
-      let offsetX = innerWidth - image.width;
-      x = offsetX / 2;
-    }
-    if (image.height < innerHeight) {
-      let offsetY = innerHeight - image.height;
-      y = offsetY / 2;
-    }
-    if (shape === null) {
-      setShape({
-        x: x,
-        y: y,
-        width: SHAPE_DEFAULT_WIDTH,
-        height: SHAPE_DEFAULT_HEIGHT,
-      });
-    }
+  if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
+    changeOrientation();
   }
 
   return (
@@ -294,7 +335,11 @@ const PictureCollage = () => {
               setSelected(false);
             }}
           >
-            <KonvaImage x={x} y={y} image={image} />
+            <KonvaImage
+              x={shape ? offset.x : 0}
+              y={shape ? offset.y : 0}
+              image={image}
+            />
           </Layer>
           <Layer visible={backgroundImageUpload}>
             <Lamp
