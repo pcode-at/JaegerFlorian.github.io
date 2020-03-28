@@ -4,17 +4,17 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Edit .env file
 
-The .env file contains the two variables REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN and REACT_APP_SHOPIFY_URI that need to be changed in order to use the correct Shopify store.
+The .env file contains the two variables _REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN_ and _REACT_APP_SHOPIFY_URI_ that need to be changed in order to use the correct Shopify store.
 
 #### REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN
 
 Create a private app inside the shopify store to get the storefront access token for your store.<br />
 [Getting started with Shopify Storefront API](https://shopify.dev/docs/storefront-api/getting-started) <br />
-Afterwards change the variable REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN to your created acess token.
+Afterwards change the variable _REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN_ to your created access token.
 
 #### REACT_APP_SHOPIFY_URI
 
-Change the REACT_APP_SHOPIFY_URI variable inside the .env file to https://{your-shopify-store}.myshopify.com/api/graphql
+Change the _REACT_APP_SHOPIFY_URI_ variable inside the .env file to _https://{your-shopify-store}.myshopify.com/api/graphql_
 
 ## Available Scripts
 
