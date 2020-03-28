@@ -14,7 +14,7 @@ Afterwards change the variable _REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN_ to yo
 
 #### REACT_APP_SHOPIFY_URI
 
-Change the _REACT_APP_SHOPIFY_URI_ variable inside the .env file to _https://{your-shopify-store}.myshopify.com/api/graphql_
+Change the _REACT_APP_SHOPIFY_URI_ variable inside the .env file to _"https://{your-shopify-store}.myshopify.com/api/graphql"_
 
 ## Available Scripts
 
@@ -34,3 +34,7 @@ It correctly bundles React in production mode and optimizes the build for the be
 The build is minified and the filenames include the hashes.<br />
 Your app is ready to be deployed!<br />
 Use serve -s build afterwards to run the build locally on Open [http://localhost:5000](http://localhost:5000)
+
+### npm run build-master
+
+Deploy the build version to the url _"[jaegerflorian.github.io](jaegerflorian.github.io)"_
