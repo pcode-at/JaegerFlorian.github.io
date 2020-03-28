@@ -7,9 +7,6 @@ import * as loadImage from 'blueimp-load-image';
 import { makeStyles } from '@material-ui/core/styles';
 import { saveAs } from 'file-saver';
 
-const SHAPE_DEFAULT_WIDTH = 150;
-const SHAPE_DEFAULT_HEIGHT = 240;
-
 const useStyles = makeStyles({
   outerContainer: {
     height: '100vh',
