@@ -33,7 +33,7 @@ It correctly bundles React in production mode and optimizes the build for the be
 
 The build is minified and the filenames include the hashes.<br />
 Your app is ready to be deployed!<br />
-Use serve -s build afterwards to run the build locally on Open [http://localhost:5000](http://localhost:5000)
+Use _`serve -s build`_ afterwards to run the build locally on Open [http://localhost:5000](http://localhost:5000)
 
 ### `npm run build-master`
 
