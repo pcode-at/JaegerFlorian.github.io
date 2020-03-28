@@ -37,4 +37,4 @@ Use serve -s build afterwards to run the build locally on Open [http://localhost
 
 ### npm run build-master
 
-Deploy the build version to the url _"[jaegerflorian.github.io](jaegerflorian.github.io)"_
+Deploy the build version to the url _"[https://jaegerflorian.github.io/](https://jaegerflorian.github.io/)"_
