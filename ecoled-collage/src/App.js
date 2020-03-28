@@ -271,6 +271,7 @@ const PictureCollage = () => {
             maxWidth: innerWidth,
             maxHeight: innerHeight,
           });
+          console.log(scaledImage);
           setImage(scaledImage);
           setBackgroundImage(img);
           let x;
