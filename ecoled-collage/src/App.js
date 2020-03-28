@@ -10,27 +10,6 @@ import { saveAs } from 'file-saver';
 const SHAPE_DEFAULT_WIDTH = 150;
 const SHAPE_DEFAULT_HEIGHT = 240;
 
-const query = gql`
-  query query {
-    products(first: 1, query: "title:'Ecoled Blade One'") {
-      edges {
-        node {
-          id
-          title
-          images(first: 10) {
-            edges {
-              node {
-                originalSrc
-                altText
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
 const useStyles = makeStyles({
   outerContainer: {
     height: '100vh',
@@ -102,15 +81,34 @@ const useStyles = makeStyles({
 
 const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
   const [lampUrl, setLampUrl] = React.useState(null);
-
-  if (data && lampUrl === null) {
-    data.products.edges[0].node.images.edges.forEach(product => {
+  let lampHeight;
+  let lampWidth;
+  if (
+    data &&
+    data.node &&
+    data.node.images &&
+    data.node.images.edges.length !== 0 &&
+    lampUrl === null
+  ) {
+    data.node.images.edges.forEach(product => {
       if (product.node.altText === 'collage') {
         setLampUrl(product.node.originalSrc);
       }
     });
   }
   const [image] = useImage(lampUrl, 'Anonymous');
+  if (
+    image &&
+    shapeProps &&
+    shapeProps.height === null &&
+    shapeProps.width === null
+  ) {
+    const aspectRatio = image.width / image.height;
+    lampHeight = window.innerHeight / 4;
+    lampWidth = lampHeight * aspectRatio;
+    shapeProps.width = lampWidth;
+    shapeProps.height = lampHeight;
+  }
   const shapeRef = React.useRef();
   const trRef = React.useRef();
   React.useEffect(() => {
@@ -170,6 +168,37 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
 };
 
 const PictureCollage = () => {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
+  const productId = urlParams.get('product_id');
+  let query;
+  if (productId) {
+    query = gql`
+      query query {
+        node(id: "${productId}") {
+          ... on Product {
+            images(first: 100) {
+              edges {
+                node {
+                  originalSrc
+                  altText
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+  } else {
+    query = gql`
+      query query {
+        shop {
+          name
+        }
+      }
+    `;
+  }
+
   const classes = useStyles();
   const { data } = useQuery(query);
   const canvasStage = React.createRef();
@@ -210,8 +239,8 @@ const PictureCollage = () => {
       setShape({
         x: x,
         y: y,
-        width: SHAPE_DEFAULT_WIDTH,
-        height: SHAPE_DEFAULT_HEIGHT,
+        width: null,
+        height: null,
       });
     }
 
@@ -262,8 +291,8 @@ const PictureCollage = () => {
             setShape({
               x: x,
               y: y,
-              width: SHAPE_DEFAULT_WIDTH,
-              height: SHAPE_DEFAULT_HEIGHT,
+              width: null,
+              height: null,
             });
           }
         },
@@ -283,9 +312,6 @@ const PictureCollage = () => {
 
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
     changeOrientation();
-  }
-  if (offset !== null) {
-    console.log(offset.x, offset.y);
   }
 
   return (
