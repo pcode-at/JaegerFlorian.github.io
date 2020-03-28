@@ -2,7 +2,7 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Change Shopify Store
 
-## Edit .env file
+### Edit .env file
 
 The .env file contains the two variables _REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN_ and _REACT_APP_SHOPIFY_URI_ that need to be changed in order to use the correct Shopify store.
 
