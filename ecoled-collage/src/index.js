@@ -12,12 +12,13 @@ import { ApolloProvider } from '@apollo/react-hooks';
 const cache = new InMemoryCache();
 
 const httpLink = new HttpLink({
-  uri: 'https://picture-collage-development-store.myshopify.com/api/graphql',
+  uri: process.env.REACT_APP_SHOPIFY_URI,
 });
 
 const middlewareLink = setContext(() => ({
   headers: {
-    'X-Shopify-Storefront-Access-Token': '6ffce0a3460c1eac5a62e776d6d292bb',
+    'X-Shopify-Storefront-Access-Token':
+      process.env.REACT_APP_SHOPIFY_STOREFRONT_ACCESS_TOKEN,
   },
 }));
 

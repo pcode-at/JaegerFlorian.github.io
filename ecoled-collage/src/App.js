@@ -12,7 +12,6 @@ const useStyles = makeStyles({
     height: '100vh',
     display: 'flex',
   },
-  stageContainerBeforeUpload: {},
   stageContainerAfterUpload: {
     width: '100%',
     alignContent: 'center',
@@ -55,9 +54,6 @@ const useStyles = makeStyles({
     width: '100%',
     alignSelf: 'stretch',
   },
-  buttonLabel: {
-    width: '100%',
-  },
   buttonBeforeUpload: {
     background: '#252a2b',
     fontFamily: 'sans-serif',
@@ -76,7 +72,14 @@ const useStyles = makeStyles({
   },
 });
 
-const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
+const Lamp = ({
+  backgroundImage,
+  data,
+  shapeProps,
+  isSelected,
+  onSelect,
+  onChange,
+}) => {
   const [lampUrl, setLampUrl] = React.useState(null);
   let lampHeight;
   let lampWidth;
@@ -101,10 +104,29 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
     shapeProps.width === null
   ) {
     const aspectRatio = image.width / image.height;
-    lampHeight = window.innerHeight / 4;
-    lampWidth = lampHeight * aspectRatio;
-    shapeProps.width = lampWidth;
-    shapeProps.height = lampHeight;
+    if (backgroundImage) {
+      if (
+        backgroundImage.height > backgroundImage.width &&
+        window.innerHeight > window.innerWidth
+      ) {
+        lampHeight = window.innerHeight / 4;
+      } else if (
+        backgroundImage.height > backgroundImage.width &&
+        window.innerHeight < window.innerWidth
+      ) {
+        lampHeight = window.innerHeight / 3;
+      } else if (
+        backgroundImage.height < backgroundImage.width &&
+        window.innerHeight > window.innerWidth
+      ) {
+        lampHeight = window.innerHeight / 6;
+      } else {
+        lampHeight = window.innerHeight / 3;
+      }
+      lampWidth = lampHeight * aspectRatio;
+      shapeProps.width = lampWidth;
+      shapeProps.height = lampHeight;
+    }
   }
   const shapeRef = React.useRef();
   const trRef = React.useRef();
@@ -167,9 +189,10 @@ const Lamp = ({ data, shapeProps, isSelected, onSelect, onChange }) => {
 const PictureCollage = () => {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-  const productId = urlParams.get('product_id');
+  let productId = urlParams.get('product_id');
   let query;
   if (productId) {
+    productId = btoa('gid://shopify/Product/' + productId);
     query = gql`
       query query {
         node(id: "${productId}") {
@@ -211,43 +234,71 @@ const PictureCollage = () => {
   const [currentOrientation, setCurrentOrientation] = React.useState(null);
   const [offset, setOffset] = React.useState(null);
 
+  function changeOffset(scaledImage) {
+    //The picture gets put in the center of the screen with offset
+    //orientationInnerHeight (width) - scaledImage.height (width) gets the full blank space
+    //and  "/2" makes the space even on either side
+    let offsetX;
+    let offsetY;
+    if (scaledImage.width < innerWidth) {
+      offsetX = (innerWidth - scaledImage.width) / 2;
+    }
+    if (scaledImage.height < innerHeight) {
+      offsetY = (innerHeight - scaledImage.height) / 2;
+    }
+    setOffset({ x: offsetX, y: offsetY });
+    setShape({
+      x: offsetX,
+      y: offsetY,
+      width: null,
+      height: null,
+    });
+  }
+
   function changeOrientation() {
-    //Gets the current orientation before the phone rotates, so true means that the phone will be in landscape
+    //Gets the current orientation before the phone rotates, so true means that the phone will be in landscape afterwards
     const orientation = window.matchMedia('(orientation: portrait)');
     if (orientation.matches === true) {
       setCurrentOrientation('landscape');
     } else {
       setCurrentOrientation('portrait');
     }
-    const orientationInnerHeight = innerHeight;
-    const orientationInnerWidth = innerWidth;
+    //The innerWidth is from before the rotation, so the width of the image has to be set to the innerHeight
+    const orientationInnerWidth = innerHeight;
+    const orientationInnerHeight = innerWidth;
     if (backgroundImage) {
       const scaledImage = loadImage.scale(backgroundImage, {
-        maxWidth: orientationInnerHeight,
-        maxHeight: orientationInnerWidth,
+        maxWidth: orientationInnerWidth,
+        maxHeight: orientationInnerHeight,
       });
-
       setImage(scaledImage);
-      let offsetX = orientationInnerHeight - scaledImage.width;
-      let x = offsetX / 2;
-      let offsetY = orientationInnerWidth - scaledImage.height;
-      let y = offsetY / 2;
-      setOffset({ x: x, y: y });
+      let offsetX;
+      let offsetY;
+      if (scaledImage.width < orientationInnerWidth) {
+        offsetX = (orientationInnerWidth - scaledImage.width) / 2;
+      }
+      if (scaledImage.height < orientationInnerHeight) {
+        offsetY = (orientationInnerHeight - scaledImage.height) / 2;
+      }
+      setOffset({ x: offsetX, y: offsetY });
       setShape({
-        x: x,
-        y: y,
+        x: offsetX,
+        y: offsetY,
         width: null,
         height: null,
       });
     }
-
-    setInnerHeight(orientationInnerWidth);
-    setInnerWidth(orientationInnerHeight);
+    //Sets the innerHeight for after the rotation
+    setInnerHeight(orientationInnerHeight);
+    setInnerWidth(orientationInnerWidth);
   }
 
   React.useEffect(() => {
     window.onorientationchange = function() {
       changeOrientation();
+      //Checks if the screen was rotated once more after the changeOrientation function is called
+      //to check if the phone was rotated 180° which is sometimes not noticed by
+      //window.onorientationChange
       this.setTimeout(() => {
         if (this.window.innerHeight !== innerHeight) {
           changeOrientation();
@@ -271,28 +322,9 @@ const PictureCollage = () => {
             maxWidth: innerWidth,
             maxHeight: innerHeight,
           });
-          console.log(scaledImage);
           setImage(scaledImage);
           setBackgroundImage(img);
-          let x;
-          let y;
-          if (scaledImage.width < innerWidth) {
-            let offsetX = innerWidth - scaledImage.width;
-            x = offsetX / 2;
-          }
-          if (scaledImage.height < innerHeight) {
-            let offsetY = innerHeight - scaledImage.height;
-            y = offsetY / 2;
-          }
-          setOffset({ x: x, y: y });
-          if (shape === null) {
-            setShape({
-              x: x,
-              y: y,
-              width: null,
-              height: null,
-            });
-          }
+          changeOffset(scaledImage);
         },
         { orientation: true }
       );
@@ -343,6 +375,7 @@ const PictureCollage = () => {
           </Layer>
           <Layer visible={backgroundImageUpload}>
             <Lamp
+              backgroundImage={image}
               data={data}
               shapeProps={shape}
               isSelected={selected}
