@@ -189,9 +189,10 @@ const Lamp = ({
 const PictureCollage = () => {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-  const productId = urlParams.get('product_id');
+  let productId = urlParams.get('product_id');
   let query;
   if (productId) {
+    productId = btoa('gid://shopify/Product/' + productId);
     query = gql`
       query query {
         node(id: "${productId}") {
