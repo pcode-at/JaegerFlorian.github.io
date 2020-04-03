@@ -140,7 +140,7 @@ const Lamp = ({
   return (
     <React.Fragment>
       <KonvaImage
-        crossOrigin="anonymus"
+        crossOrigin="anonymous"
         fill=""
         image={image}
         onTap={onSelect}
