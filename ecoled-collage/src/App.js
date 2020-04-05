@@ -246,12 +246,13 @@ const PictureCollage = () => {
     //and  "/2" makes the space even on either side
     let offsetX;
     let offsetY;
-    if (scaledImage.width / window.devicePixelRatio < innerWidth) {
-      offsetX = (innerWidth - scaledImage.width / window.devicePixelRatio) / 2;
+    if (scaledImage.width / window.devicePixelRatio < window.innerWidth) {
+      offsetX =
+        (window.innerWidth - scaledImage.width / window.devicePixelRatio) / 2;
     }
-    if (scaledImage.height / window.devicePixelRatio < innerHeight) {
+    if (scaledImage.height / window.devicePixelRatio < window.innerHeight) {
       offsetY =
-        (innerHeight - scaledImage.height / window.devicePixelRatio) / 2;
+        (window.innerHeight - scaledImage.height / window.devicePixelRatio) / 2;
     }
     setOffset({ x: offsetX, y: offsetY });
     setShape({
@@ -271,8 +272,8 @@ const PictureCollage = () => {
       setCurrentOrientation('portrait');
     }
     //The innerWidth is from before the rotation, so the width of the image has to be set to the innerHeight
-    const orientationInnerWidth = innerHeight;
-    const orientationInnerHeight = innerWidth;
+    const orientationInnerWidth = window.innerWidth;
+    const orientationInnerHeight = window.innerHeight;
     if (backgroundImage) {
       const scaledImage = loadImage.scale(backgroundImage, {
         maxWidth: orientationInnerWidth,
@@ -318,12 +319,11 @@ const PictureCollage = () => {
 
   React.useEffect(() => {
     window.onorientationchange = function () {
-      changeOrientation();
-      //Checks if the screen was rotated once more after the changeOrientation function is called
-      //to check if the phone was rotated 180° which is sometimes not noticed by
+      //Checks if the screen was rotated
+      //timeout implemented to check if the phone was rotated 180° which is sometimes not noticed by
       //window.onorientationChange
       this.setTimeout(() => {
-        if (this.window.innerHeight !== innerHeight) {
+        if (window.innerHeight !== innerHeight) {
           changeOrientation();
         }
       }, 400);
@@ -376,6 +376,7 @@ const PictureCollage = () => {
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
     changeOrientation();
   }
+  console.log(innerHeight);
 
   return (
     <div className={classes.outerContainer}>

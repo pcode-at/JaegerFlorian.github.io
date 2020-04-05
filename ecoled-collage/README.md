@@ -38,3 +38,4 @@ Use _`serve -s build`_ afterwards to run the build locally on [http://localhost:
 ### `npm run deploy-master`
 
 Deploy the build version to the url _"[https://jaegerflorian.github.io/](https://jaegerflorian.github.io/)"_
+Run _`npm run build`_ before this command.
