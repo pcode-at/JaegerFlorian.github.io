@@ -90,7 +90,7 @@ const Lamp = ({
     data.node.images.edges.length !== 0 &&
     lampUrl === null
   ) {
-    data.node.images.edges.forEach(product => {
+    data.node.images.edges.forEach((product) => {
       if (product.node.altText === 'collage') {
         setLampUrl(product.node.originalSrc);
       }
@@ -140,7 +140,7 @@ const Lamp = ({
   return (
     <React.Fragment>
       <KonvaImage
-        crossOrigin="anonymus"
+        crossOrigin="anonymous"
         fill=""
         image={image}
         onTap={onSelect}
@@ -148,14 +148,14 @@ const Lamp = ({
         ref={shapeRef}
         {...shapeProps}
         draggable
-        onDragEnd={e => {
+        onDragEnd={(e) => {
           onChange({
             ...shapeProps,
             x: e.target.x(),
             y: e.target.y(),
           });
         }}
-        onTransformEnd={e => {
+        onTransformEnd={(e) => {
           const node = shapeRef.current;
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
@@ -228,11 +228,17 @@ const PictureCollage = () => {
   const [backgroundImage, setBackgroundImage] = React.useState(null);
   const [image, setImage] = React.useState(null);
   const [selected, setSelected] = React.useState(false);
-  const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
   const [innerWidth, setInnerWidth] = React.useState(window.innerWidth);
+  const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
   const [shape, setShape] = React.useState(null);
   const [currentOrientation, setCurrentOrientation] = React.useState(null);
   const [offset, setOffset] = React.useState(null);
+  const [backgroundCanvasWidth, setBackgroundCanvasWidth] = React.useState(
+    null
+  );
+  const [backgroundCanvasHeight, setBackgroundCanvasHeight] = React.useState(
+    null
+  );
 
   function changeOffset(scaledImage) {
     //The picture gets put in the center of the screen with offset
@@ -240,11 +246,13 @@ const PictureCollage = () => {
     //and  "/2" makes the space even on either side
     let offsetX;
     let offsetY;
-    if (scaledImage.width < innerWidth) {
-      offsetX = (innerWidth - scaledImage.width) / 2;
+    if (scaledImage.width / window.devicePixelRatio < window.innerWidth) {
+      offsetX =
+        (window.innerWidth - scaledImage.width / window.devicePixelRatio) / 2;
     }
-    if (scaledImage.height < innerHeight) {
-      offsetY = (innerHeight - scaledImage.height) / 2;
+    if (scaledImage.height / window.devicePixelRatio < window.innerHeight) {
+      offsetY =
+        (window.innerHeight - scaledImage.height / window.devicePixelRatio) / 2;
     }
     setOffset({ x: offsetX, y: offsetY });
     setShape({
@@ -264,21 +272,37 @@ const PictureCollage = () => {
       setCurrentOrientation('portrait');
     }
     //The innerWidth is from before the rotation, so the width of the image has to be set to the innerHeight
-    const orientationInnerWidth = innerHeight;
-    const orientationInnerHeight = innerWidth;
+    const orientationInnerWidth = window.innerWidth;
+    const orientationInnerHeight = window.innerHeight;
     if (backgroundImage) {
       const scaledImage = loadImage.scale(backgroundImage, {
         maxWidth: orientationInnerWidth,
         maxHeight: orientationInnerHeight,
+        downsamplingRatio: 0.2,
+        pixelRatio: window.devicePixelRatio,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high',
+        canvas: true,
       });
       setImage(scaledImage);
+      setBackgroundCanvasWidth(parseInt(scaledImage.style.width, 10));
+      setBackgroundCanvasHeight(parseInt(scaledImage.style.height, 10));
       let offsetX;
       let offsetY;
-      if (scaledImage.width < orientationInnerWidth) {
-        offsetX = (orientationInnerWidth - scaledImage.width) / 2;
+      if (scaledImage.width / window.devicePixelRatio < orientationInnerWidth) {
+        offsetX =
+          (orientationInnerWidth -
+            scaledImage.width / window.devicePixelRatio) /
+          2;
       }
-      if (scaledImage.height < orientationInnerHeight) {
-        offsetY = (orientationInnerHeight - scaledImage.height) / 2;
+      if (
+        scaledImage.height / window.devicePixelRatio <
+        orientationInnerHeight
+      ) {
+        offsetY =
+          (orientationInnerHeight -
+            scaledImage.height / window.devicePixelRatio) /
+          2;
       }
       setOffset({ x: offsetX, y: offsetY });
       setShape({
@@ -294,13 +318,12 @@ const PictureCollage = () => {
   }
 
   React.useEffect(() => {
-    window.onorientationchange = function() {
-      changeOrientation();
-      //Checks if the screen was rotated once more after the changeOrientation function is called
-      //to check if the phone was rotated 180° which is sometimes not noticed by
+    window.onorientationchange = function () {
+      //Checks if the screen was rotated
+      //timeout implemented to check if the phone was rotated 180° which is sometimes not noticed by
       //window.onorientationChange
       this.setTimeout(() => {
-        if (this.window.innerHeight !== innerHeight) {
+        if (window.innerHeight !== innerHeight) {
           changeOrientation();
         }
       }, 400);
@@ -312,21 +335,30 @@ const PictureCollage = () => {
     backgroundImageUpload = true;
   }
 
-  const handleImageUpload = e => {
+  const handleImageUpload = (e) => {
     const [file] = e.target.files;
     if (file) {
       loadImage(
         file,
-        img => {
+        (img) => {
           const scaledImage = loadImage.scale(img, {
             maxWidth: innerWidth,
             maxHeight: innerHeight,
+            downsamplingRatio: 0.2,
+            pixelRatio: window.devicePixelRatio,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high',
+            canvas: true,
           });
           setImage(scaledImage);
           setBackgroundImage(img);
           changeOffset(scaledImage);
+          setBackgroundCanvasWidth(parseInt(scaledImage.style.width, 10));
+          setBackgroundCanvasHeight(parseInt(scaledImage.style.height, 10));
         },
-        { orientation: true }
+        {
+          orientation: true,
+        }
       );
     }
   };
@@ -335,6 +367,7 @@ const PictureCollage = () => {
     setSelected(false);
     let canvasStageSave = canvasStage.current;
     const canvasStageData = canvasStageSave.toDataURL({
+      pixelRatio: window.devicePixelRatio,
       mimeType: 'image/png',
     });
     saveAs(canvasStageData, 'collage.png');
@@ -343,6 +376,7 @@ const PictureCollage = () => {
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
     changeOrientation();
   }
+  console.log(innerHeight);
 
   return (
     <div className={classes.outerContainer}>
@@ -368,6 +402,8 @@ const PictureCollage = () => {
             }}
           >
             <KonvaImage
+              width={backgroundCanvasWidth}
+              height={backgroundCanvasHeight}
               x={shape ? offset.x : 0}
               y={shape ? offset.y : 0}
               image={image}
