@@ -227,7 +227,7 @@ const PictureCollage = () => {
 
   const [backgroundImage, setBackgroundImage] = React.useState(null);
   const [image, setImage] = React.useState(null);
-  const [selected, setSelected] = React.useState(false);
+  const [selected, setSelected] = React.useState(true);
   const [innerWidth, setInnerWidth] = React.useState(window.innerWidth);
   const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
   const [shape, setShape] = React.useState(null);
@@ -365,18 +365,19 @@ const PictureCollage = () => {
 
   const saveImage = () => {
     setSelected(false);
-    let canvasStageSave = canvasStage.current;
-    const canvasStageData = canvasStageSave.toDataURL({
-      pixelRatio: window.devicePixelRatio,
-      mimeType: 'image/png',
-    });
-    saveAs(canvasStageData, 'collage.png');
+    setTimeout(() => {
+      let canvasStageSave = canvasStage.current;
+      const canvasStageData = canvasStageSave.toDataURL({
+        pixelRatio: window.devicePixelRatio,
+        mimeType: 'image/png',
+      });
+      saveAs(canvasStageData, 'collage.png');
+    }, 150);
   };
 
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
     changeOrientation();
   }
-  console.log(innerHeight);
 
   return (
     <div className={classes.outerContainer}>
