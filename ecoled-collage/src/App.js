@@ -356,8 +356,6 @@ const PictureCollage = () => {
             imageSmoothingQuality: 'high',
             canvas: true,
           });
-          console.log(scaledImage);
-
           setImage(scaledImage);
           setBackgroundImage(img);
           changeOffset(scaledImage);
@@ -368,8 +366,6 @@ const PictureCollage = () => {
             setBackgroundCanvasWidth(parseInt(scaledImage.style.width, 10));
             setBackgroundCanvasHeight(parseInt(scaledImage.style.height, 10));
           } else {
-            console.log(scaledImage.width);
-
             setBackgroundCanvasWidth(scaledImage.width);
             setBackgroundCanvasHeight(scaledImage.height);
           }
