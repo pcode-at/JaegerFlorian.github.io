@@ -360,14 +360,21 @@ const PictureCollage = () => {
           setBackgroundImage(img);
           changeOffset(scaledImage);
           if (
-            (scaledImage.style && scaledImage.style.height) ||
-            (scaledImage.style && scaledImage.style.width)
+            scaledImage.style &&
+            scaledImage.style.height &&
+            scaledImage.style.width
           ) {
-            setBackgroundCanvasWidth(parseInt(scaledImage.style.width, 10));
             setBackgroundCanvasHeight(parseInt(scaledImage.style.height, 10));
-          } else {
+            setBackgroundCanvasWidth(parseInt(scaledImage.style.width, 10));
+          } else if (scaledImage.style && scaledImage.style.height) {
+            setBackgroundCanvasHeight(parseInt(scaledImage.style.height, 10));
             setBackgroundCanvasWidth(scaledImage.width);
+          } else if (scaledImage.style && scaledImage.style.width) {
             setBackgroundCanvasHeight(scaledImage.height);
+            setBackgroundCanvasWidth(parseInt(scaledImage.style.width, 10));
+          } else {
+            setBackgroundCanvasHeight(scaledImage.height);
+            setBackgroundCanvasWidth(scaledImage.width);
           }
         },
         {

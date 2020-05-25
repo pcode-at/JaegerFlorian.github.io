@@ -13,7 +13,7 @@
     "apollo-client": "^2.6.8",
     "apollo-link-context": "^1.0.19",
     "apollo-link-http": "^1.5.16",
-    "blueimp-load-image": "^2.28.0",
+    "blueimp-load-image": "^5.10.0",
     "dotenv": "^8.2.0",
     "file-saver": "^2.0.2",
     "gh-pages": "^2.2.0",
