@@ -195,14 +195,45 @@ const Lamp = ({
 const PictureCollage = () => {
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-  let productId = urlParams.get('product_id');
-  let query;
+  let productVariantId = urlParams.get('product_variant_id');
+  let productId;
+  let variantQuery;
+  let productQuery;
+  if (productVariantId) {
+    const productVariantIdQuery = btoa(
+      'gid://shopify/ProductVariant/' + productVariantId
+    );
+    variantQuery = gql`
+      query query {
+        node(id: "${productVariantIdQuery}") {
+          ... on ProductVariant {
+            id
+            product{
+              id
+            }
+          }
+        }
+      }
+    `;
+  } else {
+    variantQuery = gql`
+      query query {
+        shop {
+          name
+        }
+      }
+    `;
+  }
+  const { data: variantData } = useQuery(variantQuery);
+  if (variantData && variantData.node) {
+    productId = variantData.node.product.id;
+  }
   if (productId) {
-    productId = btoa('gid://shopify/Product/' + productId);
-    query = gql`
+    productQuery = gql`
       query query {
         node(id: "${productId}") {
           ... on Product {
+            onlineStoreUrl
             images(first: 100) {
               edges {
                 node {
@@ -216,7 +247,7 @@ const PictureCollage = () => {
       }
     `;
   } else {
-    query = gql`
+    productQuery = gql`
       query query {
         shop {
           name
@@ -226,14 +257,15 @@ const PictureCollage = () => {
   }
 
   const classes = useStyles();
-  const { data } = useQuery(query);
+  const { data } = useQuery(productQuery);
+  console.log(data);
   const canvasStage = React.createRef();
-
   let newImage = new Image();
 
   const [backgroundImage, setBackgroundImage] = React.useState(null);
   const [image, setImage] = React.useState(null);
   const [selected, setSelected] = React.useState(true);
+  const [savePicture, setSavePicture] = React.useState(false);
   const [innerWidth, setInnerWidth] = React.useState(window.innerWidth);
   const [innerHeight, setInnerHeight] = React.useState(window.innerHeight);
   const [shape, setShape] = React.useState(null);
@@ -341,6 +373,18 @@ const PictureCollage = () => {
     backgroundImageUpload = true;
   }
 
+  React.useEffect(() => {
+    if (!selected && savePicture) {
+      let canvasStageSave = canvasStage.current;
+      const canvasStageData = canvasStageSave.toDataURL({
+        pixelRatio: window.devicePixelRatio,
+        mimeType: 'image/png',
+      });
+      saveAs(canvasStageData, 'collage.png');
+      setSavePicture(false);
+    }
+  }, [savePicture]);
+
   const handleImageUpload = (e) => {
     const [file] = e.target.files;
     if (file) {
@@ -386,14 +430,7 @@ const PictureCollage = () => {
 
   const saveImage = () => {
     setSelected(false);
-    setTimeout(() => {
-      let canvasStageSave = canvasStage.current;
-      const canvasStageData = canvasStageSave.toDataURL({
-        pixelRatio: window.devicePixelRatio,
-        mimeType: 'image/png',
-      });
-      saveAs(canvasStageData, 'collage.png');
-    }, 150);
+    setSavePicture(true);
   };
 
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
@@ -490,6 +527,33 @@ const PictureCollage = () => {
             Bild Speichern
           </label>
         </div>
+        <form
+          action={
+            data && data.node
+              ? data.node.onlineStoreUrl
+              : process.env.REACT_APP_SHOPIFY_URI
+          }
+        >
+          <button className={classes.button} type="submit">
+            Zurück zum Produkt
+          </button>
+        </form>
+        <form
+          action={
+            data && data.node
+              ? `${process.env.REACT_APP_SHOPIFY_URI}cart/add`
+              : process.env.REACT_APP_SHOPIFY_URI
+          }
+        >
+          <input
+            type="hidden"
+            name="id"
+            value={productVariantId ? productVariantId : ''}
+          />
+          <button className={classes.button} type="submit">
+            Zum Warenkorb hinzufügen
+          </button>
+        </form>
       </div>
     </div>
   );
