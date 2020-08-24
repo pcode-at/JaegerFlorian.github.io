@@ -320,7 +320,6 @@ const PictureCollage = () => {
 
   const classes = useStyles();
   const { data } = useQuery(productQuery);
-  console.log(data);
   const canvasStage = React.createRef();
   let newImage = new Image();
 
@@ -498,7 +497,6 @@ const PictureCollage = () => {
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
     changeOrientation();
   }
-  console.log(backgroundCanvasWidth);
 
   return (
     <div className={classes.outerContainer}>

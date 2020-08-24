@@ -11,7 +11,6 @@ import { ApolloProvider } from '@apollo/react-hooks';
 
 const cache = new InMemoryCache();
 
-console.log(process.env.REACT_APP_SHOPIFY_GRAPHQL_URI);
 const httpLink = new HttpLink({
   uri: process.env.REACT_APP_SHOPIFY_GRAPHQL_URI,
 });
