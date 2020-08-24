@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 import addToCart from './icons/cart-arrow-down.svg';
 import longArrowLeft from './icons/long-arrow-left.svg';
 import uploadImage from './icons/upload-image.svg';
-import { BrowserView, MobileView, isMobile } from 'react-device-detect';
+import { BrowserView, MobileView } from 'react-device-detect';
 
 const useStyles = makeStyles({
   outerContainer: {
@@ -49,13 +49,6 @@ const useStyles = makeStyles({
     bottom: 0,
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-evenly',
-  },
-  buttonContainerAfterUpload: {
-    width: '100%',
-    position: 'absolute',
-    bottom: 0,
-    display: 'flex',
     justifyContent: 'space-evenly',
   },
   browserViewAfterUpload: {
@@ -599,6 +592,7 @@ const PictureCollage = () => {
           <div>
             <label htmlFor="files">
               <img
+                alt="uploadImage"
                 src={uploadImage}
                 style={{ height: '45px', width: '45px' }}
               />
@@ -665,7 +659,11 @@ const PictureCollage = () => {
               type="submit"
               style={{ border: 'none', background: 'transparent' }}
             >
-              <img src={addToCart} style={{ height: '45px', width: '45px' }} />
+              <img
+                alt="addToCart"
+                src={addToCart}
+                style={{ height: '45px', width: '45px' }}
+              />
             </button>
           </form>
         </div>
@@ -683,6 +681,7 @@ const PictureCollage = () => {
         >
           <button style={{ border: 'none', background: 'white' }} type="submit">
             <img
+              alt="backArrow"
               src={longArrowLeft}
               style={{
                 position: 'absolute',
