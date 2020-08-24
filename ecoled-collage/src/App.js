@@ -6,6 +6,10 @@ import gql from 'graphql-tag';
 import * as loadImage from 'blueimp-load-image';
 import { makeStyles } from '@material-ui/core/styles';
 import { saveAs } from 'file-saver';
+import addToCart from './icons/cart-arrow-down.svg';
+import longArrowLeft from './icons/long-arrow-left.svg';
+import uploadImage from './icons/upload-image.svg';
+import { BrowserView, MobileView, isMobile } from 'react-device-detect';
 
 const useStyles = makeStyles({
   outerContainer: {
@@ -17,7 +21,44 @@ const useStyles = makeStyles({
     alignContent: 'center',
     alignItems: 'center',
   },
+  mobileViewBeforeUpload: {
+    width: '100%',
+    alignContent: 'center',
+    alignItems: 'center',
+  },
   buttonContainerAfterUpload: {
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'space-evenly',
+  },
+  buttonContainerAfterUploadMobile: {
+    height: '70px',
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+  },
+  mobileViewAfterUpload: {
+    height: '70px',
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
+  },
+  buttonContainerAfterUpload: {
+    width: '100%',
+    position: 'absolute',
+    bottom: 0,
+    display: 'flex',
+    justifyContent: 'space-evenly',
+  },
+  browserViewAfterUpload: {
     width: '100%',
     position: 'absolute',
     bottom: 0,
@@ -32,6 +73,14 @@ const useStyles = makeStyles({
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
+    width: '100%',
+  },
+  browserViewBeforeUpload: {
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
   singleButtonContainerAfterUpload: {
     width: '48%',
@@ -39,7 +88,13 @@ const useStyles = makeStyles({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  button: {
+  singleButtonContainerAfterUploadMobile: {
+    width: '50%',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  buttonAfterUpload: {
     background: '#252a2b',
     fontFamily: 'sans-serif',
     fontStyle: 'normal',
@@ -69,6 +124,13 @@ const useStyles = makeStyles({
     display: 'flex',
     alignSelf: 'center',
     justifyContent: 'center',
+  },
+  hidden: {
+    visibility: 'hidden',
+  },
+  backButton: {
+    dispay: 'flex',
+    position: 'absolute',
   },
 });
 
@@ -436,6 +498,7 @@ const PictureCollage = () => {
   if (window.matchMedia(`(orientation: ${currentOrientation} )`) === false) {
     changeOrientation();
   }
+  console.log(backgroundCanvasWidth);
 
   return (
     <div className={classes.outerContainer}>
@@ -482,11 +545,11 @@ const PictureCollage = () => {
           </Layer>
         </Stage>
       </div>
-      <div
-        className={
+      <BrowserView
+        viewClassName={
           backgroundImageUpload
-            ? classes.buttonContainerAfterUpload
-            : classes.buttonContainerBeforeUpload
+            ? classes.browserViewAfterUpload
+            : classes.browserViewBeforeUpload
         }
       >
         <div
@@ -499,7 +562,7 @@ const PictureCollage = () => {
           <label
             className={
               backgroundImageUpload
-                ? classes.button
+                ? classes.buttonAfterUpload
                 : classes.buttonBeforeUpload
             }
             htmlFor="files"
@@ -516,17 +579,103 @@ const PictureCollage = () => {
           </label>
         </div>
         <div
-          style={
-            backgroundImageUpload
-              ? { visibility: 'visible' }
-              : { visibility: 'hidden' }
-          }
+          style={!backgroundImageUpload ? { display: 'none' } : null}
           className={classes.singleButtonContainerAfterUpload}
         >
-          <label className={classes.button} onClick={saveImage}>
+          <label className={classes.buttonAfterUpload} onClick={saveImage}>
             Bild Speichern
           </label>
         </div>
+      </BrowserView>
+      <MobileView
+        viewClassName={
+          backgroundImageUpload
+            ? classes.mobileViewAfterUpload
+            : classes.mobileViewBeforeUpload
+        }
+        style={{
+          bottom: (window.innerHeight - backgroundCanvasHeight) / 4 - 35,
+        }}
+      >
+        {backgroundImageUpload ? (
+          <div>
+            <label htmlFor="files">
+              <img
+                src={uploadImage}
+                style={{ height: '45px', width: '45px' }}
+              />
+              <input
+                id="files"
+                visibility="hidden"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
+            </label>
+          </div>
+        ) : (
+          <div
+            className={
+              backgroundImageUpload
+                ? classes.hidden
+                : classes.singleButtonContainerBeforeUpload
+            }
+          >
+            <label
+              className={
+                backgroundImageUpload
+                  ? classes.buttonAfterUpload
+                  : classes.buttonBeforeUpload
+              }
+              htmlFor="files"
+            >
+              Bild hochladen
+              <input
+                id="files"
+                visibility="hidden"
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={handleImageUpload}
+              />
+            </label>
+          </div>
+        )}
+        <div
+          style={!backgroundImageUpload ? { display: 'none' } : null}
+          className={classes.singleButtonContainerAfterUploadMobile}
+        >
+          <label className={classes.buttonAfterUpload} onClick={saveImage}>
+            Bild Speichern
+          </label>
+        </div>
+        <div style={!backgroundImageUpload ? { display: 'none' } : null}>
+          <form
+            action={
+              data && data.node
+                ? `${process.env.REACT_APP_SHOPIFY_URI}cart/add`
+                : process.env.REACT_APP_SHOPIFY_URI
+            }
+          >
+            <input
+              type="hidden"
+              name="id"
+              value={productVariantId ? productVariantId : ''}
+            />
+            <button
+              type="submit"
+              style={{ border: 'none', background: 'transparent' }}
+            >
+              <img src={addToCart} style={{ height: '45px', width: '45px' }} />
+            </button>
+          </form>
+        </div>
+      </MobileView>
+      <MobileView
+        viewClassName={classes.backButton}
+        style={!backgroundImageUpload ? { display: 'none' } : null}
+      >
         <form
           action={
             data && data.node
@@ -534,27 +683,18 @@ const PictureCollage = () => {
               : process.env.REACT_APP_SHOPIFY_URI
           }
         >
-          <button className={classes.button} type="submit">
-            Zurück zum Produkt
+          <button style={{ border: 'none', background: 'white' }} type="submit">
+            <img
+              src={longArrowLeft}
+              style={{
+                position: 'absolute',
+                height: '50px',
+                width: '50px',
+              }}
+            />
           </button>
         </form>
-        <form
-          action={
-            data && data.node
-              ? `${process.env.REACT_APP_SHOPIFY_URI}cart/add`
-              : process.env.REACT_APP_SHOPIFY_URI
-          }
-        >
-          <input
-            type="hidden"
-            name="id"
-            value={productVariantId ? productVariantId : ''}
-          />
-          <button className={classes.button} type="submit">
-            Zum Warenkorb hinzufügen
-          </button>
-        </form>
-      </div>
+      </MobileView>
     </div>
   );
 };
