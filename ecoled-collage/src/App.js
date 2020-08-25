@@ -13,7 +13,6 @@ import { BrowserView, MobileView } from 'react-device-detect';
 
 const useStyles = makeStyles({
   outerContainer: {
-    height: '100vh',
     display: 'flex',
   },
   stageContainerAfterUpload: {
@@ -122,9 +121,14 @@ const useStyles = makeStyles({
     visibility: 'hidden',
   },
   backButton: {
-    dispay: 'flex',
+    top: 0,
     position: 'absolute',
   },
+  uploadIcon: {
+    display: 'flex',
+    width: '45px',
+    justifyContent: 'center',
+  }
 });
 
 const Lamp = ({
@@ -369,7 +373,7 @@ const PictureCollage = () => {
     if (backgroundImage) {
       const scaledImage = loadImage.scale(backgroundImage, {
         maxWidth: orientationInnerWidth,
-        maxHeight: orientationInnerHeight,
+        maxHeight: orientationInnerHeight - 140,
         downsamplingRatio: 0.2,
         pixelRatio: window.devicePixelRatio,
         imageSmoothingEnabled: true,
@@ -447,7 +451,7 @@ const PictureCollage = () => {
         (img) => {
           const scaledImage = loadImage.scale(img, {
             maxWidth: innerWidth,
-            maxHeight: innerHeight,
+            maxHeight: innerHeight - 140,
             downsamplingRatio: 0.2,
             pixelRatio: window.devicePixelRatio,
             imageSmoothingEnabled: true,
@@ -492,7 +496,7 @@ const PictureCollage = () => {
   }
 
   return (
-    <div className={classes.outerContainer}>
+    <div className={classes.outerContainer} style={{height: window.innerHeight}}>
       <div
         className={
           backgroundImageUpload
@@ -584,9 +588,10 @@ const PictureCollage = () => {
             ? classes.mobileViewAfterUpload
             : classes.mobileViewBeforeUpload
         }
-        style={{
-          bottom: (window.innerHeight - backgroundCanvasHeight) / 4 - 35,
-        }}
+        style={(window.innerHeight === backgroundCanvasHeight - 140) ?
+          {bottom: 0} : {bottom: (window.innerHeight - backgroundCanvasHeight) / 4 - 35}
+        }
+        
       >
         {backgroundImageUpload ? (
           <div>
@@ -642,7 +647,7 @@ const PictureCollage = () => {
             Bild Speichern
           </label>
         </div>
-        <div style={!backgroundImageUpload ? { display: 'none' } : null}>
+        <div className={classes.uploadIcon} style={!backgroundImageUpload ? { display: 'none' } : null}>
           <form
             action={
               data && data.node
@@ -679,12 +684,11 @@ const PictureCollage = () => {
               : process.env.REACT_APP_SHOPIFY_URI
           }
         >
-          <button style={{ border: 'none', background: 'white' }} type="submit">
+          <button style={{ border: 'none', background: 'transparent' }} type="submit">
             <img
               alt="backArrow"
               src={longArrowLeft}
               style={{
-                position: 'absolute',
                 height: '50px',
                 width: '50px',
               }}
